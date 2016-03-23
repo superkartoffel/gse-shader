@@ -70,6 +70,8 @@ const ShaderMenu = new Lang.Class({
 
       this._callbacks.push( function() {
         this._shaderModifier._changeShader(shader);
+    	this._sliderChanged(this._slider, 0.5);
+    	this._slider.setValue(0.5);
       });
       item.connect('activate', Lang.bind(this, this._callbacks[i]));
       this.menu.addMenuItem(item);
