@@ -74,7 +74,6 @@ const ShaderMenu = new Lang.Class({
 
       this._callbacks.push( function() {
         this._shaderModifier._changeShader(shader);
-        this._updateLogo(shader);
     	this._sliderChanged(this._slider, 0.5);
     	this._slider.setValue(0.5);
       });
@@ -113,31 +112,5 @@ const ShaderMenu = new Lang.Class({
   _sliderChanged : function(slider, value) {
     //clamp fixing issue with cogl
     this._shaderModifier.updateSliderValue(this._clamp(value, 0.001, 0.999));
-  },
-
-  _updateLogo : function(shader) {
-    this.actor.remove_actor(this._logo);
-    if(shader.name == "luminosity") {
-      this._logo = new St.Icon({ icon_name: 'display-brightness-symbolic',
-                                 style_class: 'popup-menu-icon' });
-      this.actor.add_actor(this._logo);
-    }
-    else if (shader.name == "magnifier") {
-      this._logo = new St.Icon({ icon_name: 'zoom-fit-best-symbolic',
-                                 style_class: 'popup-menu-icon' });
-      this.actor.add_actor(this._logo);
-    }
-    else if (shader.name == "pixelColoration") {
-      this._logo = new St.Icon({ icon_name: 'preferences-color-symbolic',
-                                 style_class: 'popup-menu-icon' });
-      this.actor.add_actor(this._logo);
-    }
-    else if (shader.name == "mouseTracker") {
-      this._logo = new St.Icon({ icon_name: 'input-mouse-symbolic',
-                                 style_class: 'popup-menu-icon' });
-      this.actor.add_actor(this._logo);
-    }
-    else
-      this._initDefaultLogo();
   }
 });
