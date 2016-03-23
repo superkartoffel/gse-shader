@@ -9,5 +9,8 @@ uniform sampler2D tex;
 
 void main()
 {
-  cogl_color_out = vec4(texture2D( tex, cogl_tex_coord_in[0].xy).rgb * slider, 1.0);
+  float value = slider;
+  if(value < 0.2)
+    value = 0.2;
+  cogl_color_out = vec4(texture2D( tex, cogl_tex_coord_in[0].xy).rgb * value, 1.0);
 }
