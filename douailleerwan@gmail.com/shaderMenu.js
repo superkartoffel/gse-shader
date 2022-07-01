@@ -17,7 +17,7 @@
 //  Douaille Erwan <douailleerwan@gmail.com>
 
 const Gio = imports.gi.Gio;
-const St  = imports.gi.St;
+const { GObject, St } = imports.gi;
 
 const Lang = imports.lang;
 
@@ -30,37 +30,37 @@ const Me             = ExtensionUtils.getCurrentExtension();
 
 const ShaderList     = Me.imports.shaderList;
 
-const ShaderMenu = new Lang.Class({
-  Name : 'ShaderMenu',
-  Extends : PanelMenu.Button,
 
-  _init : function(shaderModifier) {
-    this.parent(0.0, "ShaderMenu");
+
+var ShaderMenu = GObject.registerClass({ GTypeName: 'ShaderMenu' },
+class ShaderMenu extends PanelMenu.Button {
+
+  constructor(shaderModifier) {
+    super(0.0, "ShaderMenu");
     this._shaderModifier = shaderModifier;
     this._shaderLister = new ShaderList.ShaderList();
     this._initDefaultLogo();
     this._createMenu();
-  },
+  }
 
-  _initDefaultLogo : function() {
+  _initDefaultLogo() {
     let gicon = Gio.icon_new_for_string(Me.path + "/" + "logo.png");
     this._logo = new St.Icon({ gicon: gicon});
     this.actor.add_actor(this._logo);
-  },
+  }
 
-  _createMenu : function() {
+  _createMenu() {
     this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
     this._addShaderList();
     this._addSeparator();
-    this._addSlider();
-  },
+  }
 
-  _addSeparator : function() {
+  _addSeparator() {
     let item = new PopupMenu.PopupSeparatorMenuItem('');
     this.menu.addMenuItem(item);
-  },
+  }
 
-  _addShaderList : function(config, output) {
+  _addShaderList(config, output) {
     let  item = new PopupMenu.PopupMenuItem(_("Shader menu"));
     item.label.add_style_class_name('display-subtitle');
     item.actor.reactive = false;
@@ -74,43 +74,45 @@ const ShaderMenu = new Lang.Class({
 
       this._callbacks.push( function() {
         this._shaderModifier._changeShader(shader);
-    	this._sliderChanged(this._slider, 0.5);
-    	this._slider.setValue(0.5);
+        this._removeSlider()
+        if (this._shaderModifier.hasSlider()) this._addSlider();
+        this._sliderChanged(this._slider, 0.5);
+        this._slider.value = 0.5;
       });
       item.connect('activate', Lang.bind(this, this._callbacks[i]));
       this.menu.addMenuItem(item);
     }
-  },
+  }
 
-  _addSlider : function() {
+  _addSlider() {
     this._item = new PopupMenu.PopupBaseMenuItem({ activate: false });
     this.menu.addMenuItem(this._item);
 
     this._slider = new Slider.Slider(.5);
-    this._slider.connect('value-changed', Lang.bind(this, this._sliderChanged));
-    this._slider.actor.accessible_name = _("Rotation");
+    this._slider.connect('notify::value', Lang.bind(this, this._sliderChanged));
     this._slider.can_focus = false;
-    this._slider.setValue(0.5);
+    this._slider.value = 0.5;
     this._sliderChanged(this._slider, this._slider._value);
 
     let icon = new St.Icon({ icon_name: 'view-refresh',
                              style_class: 'popup-menu-icon' });
     this._item.actor.add(icon);
-    this._item.actor.add(this._slider.actor, { expand: true });
-    this._item.actor.connect('button-press-event', Lang.bind(this, function(actor, event) {
-      return this._slider.startDragging(event);
-    }));
-    this._item.actor.connect('key-press-event', Lang.bind(this, function(actor, event) {
-      return this._slider.onKeyPressEvent(actor, event);
-    }));
-  },
+    this._item.actor.add(this._slider.actor);
+  }
 
-  _clamp : function(num, min, max) {
+  _removeSlider() {
+    if (this._item) {
+      this._item.destroy();
+      delete this._item;
+    }
+  }
+
+  _clamp(num, min, max) {
     return num < min ? min : num > max ? max : num;
-  },
+  }
 
-  _sliderChanged : function(slider, value) {
+  _sliderChanged(slider) {
     //clamp fixing issue with cogl
-    this._shaderModifier.updateSliderValue(this._clamp(value, 0.001, 0.999));
+    this._shaderModifier.updateSliderValue(this._clamp(slider.value, 0.001, 0.999));
   }
 });

@@ -26,28 +26,37 @@ const Lang = imports.lang;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me             = ExtensionUtils.getCurrentExtension();
 
-const ShaderModifier = new Lang.Class({
-  Name : 'ShaderModifier',
+const unused = Symbol('unused');
 
-  _init : function(actor) {
+var ShaderModifier = class ShaderModifier {
+
+  constructor(actor) {
     this._actor = actor;
+
     this._currentShader = {name : "default", fileName : "default.frag" } ;
     this._sliderValue = 0.0;
     this._date = new GLib.DateTime();
-    this._applyCurrentShader();
-  },
 
-  _changeShader : function(shaderItem) {
+    // we deliberately don't apply a shader on construction because
+    // if the user has a broken gl compiler or otherwise broken system then
+    // the whole screen will freeze.   When that happens, if the user reboots their system and the shader
+    // is applied again at startup, it makes recovery very hard for them.   This way, nothing is applied
+    // till the menu is used.
+  }
+
+  _changeShader(shaderItem) {
     this._removeShader();
     this._currentShader = shaderItem;
     this._applyCurrentShader();
-  },
+  }
 
-  _applyCurrentShader : function() {
+  _applyCurrentShader() {
+      this._properties={};
       try {
         this._shaderSource = Shell.get_file_contents_utf8_sync(Me.path + "/" + this._currentShader.fileName);
       } catch (e) {
-        this._shaderSourcer = null;
+        this._shaderSource = null;
+        return;
       }
 
       if(this._actor) {
@@ -56,37 +65,58 @@ const ShaderModifier = new Lang.Class({
           this._fx = new Clutter.ShaderEffect({
             shader_type: Clutter.ShaderType.FRAGMENT_SHADER });
           this._fx.set_shader_source(this._shaderSource);
-          this._fx.set_uniform_value('height', this._actor.get_height());
-          this._fx.set_uniform_value('width', this._actor.get_width());
-          this._fx.set_uniform_value('slider', this._sliderValue);
+          this._newFrame();
           this._actor.add_effect_with_name('shader',  this._fx);
 
-          this._timeline = new Clutter.Timeline({ duration: 1, repeat_count: -1 });
-          this._timeline.connect('new-frame', Lang.bind(this, this._newFrame));
-          this._timeline.start();
+          this._actor.connect('after-paint', Lang.bind(this, this._newFrame));
         }
       }
-  },
-
-  _newFrame: function() {
-    this._fx.set_uniform_value('height', this._actor.get_height());
-    this._fx.set_uniform_value('width', this._actor.get_width());
-    this._fx.set_uniform_value('mouseX',global.get_pointer()[0]);
-    this._fx.set_uniform_value('mouseY',global.get_pointer()[1]);
-    this._fx.set_uniform_value('globalTime', (new GLib.DateTime()).get_seconds());
-    this._fx.set_uniform_value('slider', this._sliderValue);
-    this._actor.scale_y = 1.0;
-  },
-
-  _removeShader : function() {
-    this._removeShaderNamed('shader');
-  },
-
-  _removeShaderNamed : function(aShaderName) {
-    this._actor.remove_effect_by_name(aShaderName);
-  },
-
-  updateSliderValue : function(value) {
-    this._sliderValue = value;
   }
-});
+
+  // save substantial amounts of CPU by only setting values that are used in the shader, and only if they changed.
+  _setProperty(name, value) {
+    if (!this._properties.hasOwnProperty(name)) {
+      if (!this._shaderSource.includes(name)) {
+        this._properties[name] = unused;
+      }
+    }
+    if (this._properties[name]!=value && this._properties[name]!=unused) {
+      this._properties[name] = value;
+      this._fx.set_uniform_value(name, value);
+    }
+  }
+  _newFrame() {
+    if (!this._fx) return;
+
+    this._setProperty('height', this._actor.get_height());
+    this._setProperty('width', this._actor.get_width());
+    this._setProperty('mouseX',global.get_pointer()[0]);
+    this._setProperty('mouseY',global.get_pointer()[1]);
+    this._setProperty('globalTime', (new GLib.DateTime()).get_seconds());
+    this._setProperty('slider', this._sliderValue);
+    this._actor.scale_y = 1.0;
+
+  }
+
+  _removeShader() {
+    this._removeShaderNamed('shader');
+  }
+
+  destroy() {
+    this._removeShader();
+  }
+
+  _removeShaderNamed(aShaderName) {
+    this._actor.remove_effect_by_name(aShaderName);
+  }
+
+  updateSliderValue(value) {
+    this._sliderValue = value;
+    this._newFrame();
+  }
+
+  hasSlider() {
+
+    return this._shaderSource && this._shaderSource.includes('slider');
+  }
+};

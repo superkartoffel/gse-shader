@@ -1,8 +1,3 @@
-uniform int height;
-uniform int width;
-uniform int mouseX;
-uniform int mouseY;
-
 uniform sampler2D tex;
 
 void main()
