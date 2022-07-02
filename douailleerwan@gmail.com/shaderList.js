@@ -23,7 +23,7 @@ const Gio = imports.gi.Gio;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me             = ExtensionUtils.getCurrentExtension();
 
-const ShaderList = new Lang.Class({
+var ShaderList = new Lang.Class({
   Name : 'ShaderList',
 
   _init : function() {

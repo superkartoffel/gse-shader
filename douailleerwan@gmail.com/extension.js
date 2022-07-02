@@ -25,16 +25,18 @@ const ShaderMenu       = Me.imports.shaderMenu;
 const ShaderModifier = Me.imports.shaderModifier;
 
 let shaderMenu;
+let shaderModifier;
 
 function init(metadata) {
 }
 
 function enable() {
-  let shaderModifier = new ShaderModifier.ShaderModifier(global.stage);
+  shaderModifier = new ShaderModifier.ShaderModifier(global.stage);
   shaderMenu = new ShaderMenu.ShaderMenu(shaderModifier);
   Main.panel.addToStatusArea('shaderMenu', shaderMenu);
 }
 
 function disable() {
   shaderMenu.destroy();
+  shaderModifier.destroy();
 };

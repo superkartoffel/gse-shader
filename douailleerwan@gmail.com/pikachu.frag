@@ -1,10 +1,3 @@
-uniform int height;
-uniform int width;
-uniform int mouseX;
-uniform int mouseY;
-
-uniform float slider;
-
 uniform sampler2D tex;
 
 #define _  0.
